@@ -1,0 +1,27 @@
+pipeline:
+  name: ds-workspace-ci
+  
+project:
+  name: openshift
+
+git:
+  serverUrl: http://gogs-gogs.apps.cluster-dee7.dee7.sandbox629.opentlc.com/
+  url: http://gogs-gogs.apps.cluster-dee7.dee7.sandbox629.opentlc.com/brnguyen/ds-workspace
+  ref: master 
+
+app:
+  name: ds-workspace
+  image: ds-workspace:latest
+
+workspace: 
+  name: shared-workspace
+  size: 5Gi
+  pvcName: shared-pvc
+
+serviceAccount:
+  name: pipeline
+
+gitSecret:
+  name: gogs-cicd-agent
+  username: ZGVwbG95LWFnZW50Cg==
+  password: ZGVwbG95LWFnZW50Cg==

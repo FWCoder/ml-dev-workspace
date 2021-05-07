@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: {{ .Values.pipeline.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app.name }}
+    app.kubernetes.io/instance: {{ .Values.app.name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+spec:
+  workspaces:
+  - name: shared-workspace
+  params:
+  - name: git-repo-url
+    type: string
+    description: url of the git repo for the code of deployment
+    default: {{ .Values.git.url }}
+  - name: git-repo-ref
+    type: string
+    description: revision to be used from repo of the code for deployment
+    default: {{ .Values.git.ref }}
+  - name: image-name
+    type: string
+    description: The name:tag of the docker image that will be created
+    default: {{ .Values.app.image }}
+  - name: project-name
+    type: string
+    description: The name of the openshift project or namespace where the application will be deployed
+    default: {{ .Values.project.name }}
+  tasks:
+  - name: clone-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: {{ .Values.workspace.name }}
+    params:
+    - name: url
+      value: $(params.git-repo-url)
+    - name: subdirectory
+      value: ""
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-repo-ref)
+    - name: sslVerify
+      value: "false"
+  - name: build-image
+    taskRef:
+      name: buildah
+    workspaces:
+    - name: source
+      workspace: {{ .Values.workspace.name }}
+    params:
+    - name: dockerfile
+      value: Dockerfile
+    - name: image-name
+      value: $(params.image-name)
+    - name: project-name
+      value: $(params.project-name)
+    - name: source
+      value: .
+    runAfter:
+    - clone-repository

@@ -1,0 +1,42 @@
+metadata:
+  generateName: ds-
+projects:
+  - name: simple-nlp
+    source:
+      location: 'https://github.com/FWCoder/simple-nlp-example'
+      type: git
+      branch: master
+components:
+  - id: ms-python/python/latest
+    memoryLimit: 512Mi
+    preferences:
+      python.globalModuleInstallation: true
+    type: chePlugin
+  - mountSources: true
+    memoryLimit: 512Mi
+    type: dockerimage
+    image: >-
+      image-registry.openshift-image-registry.svc:5000/openshift/ds-workspace:latest
+    alias: python
+apiVersion: 1.0.0
+commands:
+  - name: 1. Run
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}/simple-nlp'
+        type: exec
+        command: python3.8 text-classifier.py
+        component: python
+  - name: Debug current fileopenshift
+          {
+            "version": "0.2.0",
+            "configurations": [
+              {
+                "name": "Python: Current File",
+                "type": "python",
+                "request": "launch",
+                "program": "${file}",
+                "console": "internalConsole"
+              }
+            ]
+          }
+        type: vscode-launch

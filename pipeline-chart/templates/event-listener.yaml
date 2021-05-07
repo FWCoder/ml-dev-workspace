@@ -1,0 +1,22 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app.name }}
+    app.kubernetes.io/instance: {{ .Values.app.name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+spec:
+  serviceAccountName: {{ .Values.serviceAccount.name }}
+  triggers:
+  - name: triggers-cd
+    interceptors:
+    - cel:
+        filter: >-
+          (header.match('X-GitHub-Event', 'push') &&
+          body.ref.startsWith('refs/heads/master'))
+    bindings:
+    - ref: {{ .Values.app.name }}
+    template:
+      name: {{ .Values.app.name }}

@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah
+  labels:
+    app.kubernetes.io/name: {{ .Values.app.name }}
+    app.kubernetes.io/instance: {{ .Values.app.name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/component: pipeline
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+    app.kubernetes.io/managed-by: tekton
+spec: 
+  workspaces:
+    - name: source
+  volumes:
+    - name: varlibcontainers
+      emptyDir: {}
+  params:
+    - name: dockerfile
+      description: Arguments passed to npm
+      type: string
+    - name: image-name
+      description: Name used for the image that will be build
+      type: string
+    - name: project-name
+      description: The name of the project/namespace where the image will be stored
+      type: string
+    - name: source
+      description: Source folder
+      type: string
+  steps:
+    - name: buildah-bud
+      workingDir: /workspace/source
+      volumeMounts:
+        - name: varlibcontainers
+          mountPath: /var/lib/containers
+      image: registry.redhat.io/rhel8/buildah
+      securityContext:
+        privileged: true
+      script: |-
+          buildah bud --tls-verify=false --layers -t $(inputs.params.image-name) -f $(inputs.params.dockerfile) $(inputs.params.source)
+          buildah images
+    - name: buildah-push
+      workingDir: /workspace/source
+      volumeMounts:
+        - name: varlibcontainers
+          mountPath: /var/lib/containers
+      securityContext:
+        privileged: true
+      image: registry.redhat.io/rhel8/buildah
+      script: |-
+        buildah push --tls-verify=false localhost/$(inputs.params.image-name) docker://image-registry.openshift-image-registry.svc:5000/$(inputs.params.project-name)/$(inputs.params.image-name)

@@ -1,0 +1,46 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app.name }}
+    app.kubernetes.io/instance: {{ .Values.app.name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+spec:
+  params:
+  - name: git-repo-url
+    description: The git repository url
+  - name: git-repo-name
+    description: The git repository name
+  - name: git-repo-ref
+    description: The git repository branch name
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      name: trigger-{{ .Values.pipeline.name }}-$(uid)
+      labels:
+        app.kubernetes.io/name: {{ .Values.app.name }}
+        app.kubernetes.io/instance: {{ .Values.app.name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        app.kubernetes.io/component: pipeline
+        app.kubernetes.io/part-of: {{ .Values.app.name }}
+        app.kubernetes.io/managed-by: tekton
+    spec:
+      serviceAccountName: pipeline
+      pipelineRef:
+        name: {{ .Values.pipeline.name }}
+      params:
+      - name: git-repo-url
+        value: {{ .Values.git.url }}
+      - name: git-repo-ref
+        value: {{ .Values.git.ref }}
+      - name: image-name
+        value: {{ .Values.app.image }}
+      - name: project-name
+        value: {{ .Values.project.name }}
+      workspaces: 
+      - name: {{ .Values.workspace.name }}
+        persistentvolumeclaim:
+          claimName: {{ .Values.workspace.pvcName }}
